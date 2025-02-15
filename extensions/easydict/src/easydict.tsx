@@ -2,7 +2,7 @@
  * @author: tisfeng
  * @createTime: 2022-06-23 14:19
  * @lastEditor: tisfeng
- * @lastEditTime: 2023-01-08 17:26
+ * @lastEditTime: 2023-11-21 22:18
  * @fileName: easydict.tsx
  *
  * Copyright (c) 2022 by tisfeng, All Rights Reserved.
@@ -19,7 +19,7 @@ import { myPreferences, preferredLanguage1 } from "./preferences";
 import { DisplaySection } from "./types";
 import { checkIfInstalledEudic, checkIfNeedShowReleasePrompt, trimTextLength } from "./utils";
 
-const disableConsoleLog = true;
+const disableConsoleLog = false;
 
 if (disableConsoleLog) {
   // Since too many logs will cause bugs, we need to disable the console.log in development. Ref: https://github.com/raycast/extensions/pull/3917#issuecomment-1370771358
@@ -43,12 +43,13 @@ export default function (props: LaunchProps<{ arguments: EasydictArguments }>) {
   }
 
   const { queryText } = props.arguments;
-  const trimQueryText = queryText ? trimTextLength(queryText) : undefined;
+  const trimQueryText = queryText ? trimTextLength(queryText) : props.fallbackText;
 
   const [isLoadingState, setLoadingState] = useState<boolean>(false);
   const [isShowingDetail, setIsShowingDetail] = useState<boolean>(false);
   const [isInstalledEudic, setIsInstalledEudic] = useState<boolean>(false);
   const [isShowingReleasePrompt, setIsShowingReleasePrompt] = useState<boolean>(false);
+  const [isInputChanged, setInputChangedState] = useState<boolean>(false);
 
   // check if need show release prompt, every time the list is rendered.
   checkIfNeedShowReleasePrompt((isShowing) => {
@@ -100,28 +101,29 @@ export default function (props: LaunchProps<{ arguments: EasydictArguments }>) {
     if (inputText === undefined) {
       setup();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputText]);
 
   /**
    * Do something setup when the extension is activated. Only run once.
    */
   function setup() {
-    console.log(`setup when extension is activated.`);
+    // console.log(`setup when extension is activated.`);
 
     if (trimQueryText?.length) {
-      console.log(`---> arguments queryText: ${trimQueryText}`);
+      console.warn(`---> arguments queryText: ${trimQueryText}`);
     }
 
     const startTime = Date.now();
 
+    const userInputText = trimQueryText;
+
     // If enabled system proxy, we need to wait for the system proxy to be ready.
     if (myPreferences.enableSystemProxy) {
       // If has arguments, use arguments text as input text first.
-      if (trimQueryText?.length) {
+      if (userInputText?.length) {
         configAxiosProxy().then(() => {
           console.log(`after config proxy`);
-          updateInputTextAndQueryText(trimQueryText, false);
+          updateInputTextAndQueryText(userInputText as string, false);
         });
       } else if (myPreferences.enableAutomaticQuerySelectedText) {
         Promise.all([getSelectedText(), configAxiosProxy()])
@@ -141,8 +143,8 @@ export default function (props: LaunchProps<{ arguments: EasydictArguments }>) {
         configAxiosProxy();
       }
     } else {
-      if (trimQueryText?.length) {
-        updateInputTextAndQueryText(trimQueryText, false);
+      if (userInputText?.length) {
+        updateInputTextAndQueryText(userInputText, false);
       } else if (myPreferences.enableAutomaticQuerySelectedText) {
         querySelecedtText().then(() => {
           console.log(`after query selected text`);
@@ -230,6 +232,14 @@ export default function (props: LaunchProps<{ arguments: EasydictArguments }>) {
   }
 
   function onInputChange(text: string) {
+    // console.warn(`onInputChange: ${text}`);
+
+    // Ignore the first inputChange event to avoid lost queryText argument, fix https://github.com/tisfeng/Raycast-Easydict/issues/62
+    if (!isInputChanged) {
+      setInputChangedState(true);
+      console.log("ignore first inputChange event");
+      return;
+    }
     updateInputTextAndQueryText(text, true);
   }
 

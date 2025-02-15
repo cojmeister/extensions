@@ -1,8 +1,8 @@
 /*
  * @author: tisfeng
  * @createTime: 2022-07-01 19:05
- * @lastEditor: Tisfeng
- * @lastEditTime: 2022-12-16 17:59
+ * @lastEditor: tisfeng
+ * @lastEditTime: 2023-05-17 22:34
  * @fileName: versionInfo.ts
  *
  * Copyright (c) 2022 by tisfeng, All Rights Reserved.
@@ -26,9 +26,9 @@ export class Easydict {
   static repo = "Raycast-Easydict";
 
   // * NOTE: this is new version info, don't use it directly. Use getCurrentStoredVersionInfo() instead.
-  version = "2.7.2";
-  buildNumber = 21;
-  versionDate = "2023-01-17";
+  version = "2.10.1";
+  buildNumber = 30;
+  versionDate = "2025-01-12";
   isNeedPrompt = true;
   hasPrompted = false; // * always default false, only show once, then should be set to true.
 
@@ -37,17 +37,16 @@ export class Easydict {
 
 ### 🐞 修复
 
-- 修复了 Bing 翻译失败问题。
-
-#### 如果觉得这个扩展还不错，给个 [Star](https://github.com/tisfeng/Raycast-Easydict) ⭐️ 支持一下吧 (^-^)
+- 更新有道翻译 API，修复翻译失败的问题。
+- 限制 Bing 重试次数为 3，避免过多重试。
 
 ---
 
-### 🐞 Fixes
+### 🐞 Fixed
 
-- Fixed Bing translation failed.
+- Update Youdao translation API, fixed the problem that the translation failed. https://github.com/tisfeng/Raycast-Easydict/pull/65
+- Limit Bing retry count to 3, avoid too many retries. https://github.com/raycast/extensions/issues/16307
 `;
-
   getRepoUrl() {
     return `${githubUrl}/${Easydict.author}/${Easydict.repo}`;
   }

@@ -13,25 +13,17 @@ import IssueActions from "./IssueActions";
 import { formatCycle } from "../helpers/cycles";
 import { getProjectIcon } from "../helpers/projects";
 import { getEstimateLabel } from "../helpers/estimates";
-import { getDueDateIcon } from "../helpers/dates";
+import { getDateIcon } from "../helpers/dates";
 
 type IssueListItemProps = {
   issue: IssueResult;
   mutateList?: MutatePromise<IssueResult[] | undefined>;
   mutateSubIssues?: MutatePromise<IssueResult[] | undefined>;
   priorities: IssuePriorityValue[] | undefined;
-  users: User[] | undefined;
   me: User | undefined;
 };
 
-export default function IssueListItem({
-  issue,
-  mutateList,
-  mutateSubIssues,
-  priorities,
-  me,
-  users,
-}: IssueListItemProps) {
+export default function IssueListItem({ issue, mutateList, mutateSubIssues, priorities, me }: IssueListItemProps) {
   const keywords = [issue.identifier, issue.state.name, issue.priorityLabel];
 
   if (issue.assignee) {
@@ -58,7 +50,7 @@ export default function IssueListItem({
       tooltip: `Updated: ${format(updatedAt, "EEEE d MMMM yyyy 'at' HH:mm")}`,
     },
     {
-      icon: dueDate ? getDueDateIcon(dueDate) : undefined,
+      icon: dueDate ? getDateIcon(dueDate) : undefined,
       text: dueDate ? format(dueDate, "MMM dd") : undefined,
       tooltip: dueDate ? `Due date: ${format(dueDate, "MM/dd/yyyy")}` : undefined,
     },
@@ -103,7 +95,7 @@ export default function IssueListItem({
           <Action.Push
             title="Show Details"
             icon={Icon.Sidebar}
-            target={<IssueDetail issue={issue} mutateList={mutateList} priorities={priorities} users={users} me={me} />}
+            target={<IssueDetail issue={issue} mutateList={mutateList} priorities={priorities} me={me} />}
           />
 
           <IssueActions
@@ -111,7 +103,6 @@ export default function IssueListItem({
             mutateList={mutateList}
             mutateSubIssues={mutateSubIssues}
             priorities={priorities}
-            users={users}
             me={me}
           />
         </ActionPanel>

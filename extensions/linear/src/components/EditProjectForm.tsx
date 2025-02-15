@@ -5,18 +5,18 @@ import { ProjectResult } from "../api/getProjects";
 
 import useTeams from "../hooks/useTeams";
 import useUsers from "../hooks/useUsers";
-import useMilestones from "../hooks/useMilestones";
 
-import { getLinearClient } from "../helpers/withLinearClient";
+import { getLinearClient } from "../api/linearClient";
 import { getTeamIcon } from "../helpers/teams";
 import { getUserIcon } from "../helpers/users";
 import { projectStatuses, projectStatusIcon, projectStatusText } from "../helpers/projects";
 import { getErrorMessage } from "../helpers/errors";
 import { CreateProjectValues } from "./CreateProjectForm";
+import { useState } from "react";
 
 type EditProjectProps = {
   project: ProjectResult;
-  mutateProjects: MutatePromise<ProjectResult[] | undefined>;
+  mutateProjects: MutatePromise<ProjectResult[], ProjectResult[]>;
 };
 
 export default function EditProjectForm({ project, mutateProjects }: EditProjectProps) {
@@ -24,9 +24,11 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
 
   const { pop } = useNavigation();
 
-  const { teams, isLoadingTeams } = useTeams();
+  const { teams, org, isLoadingTeams } = useTeams();
   const { users, isLoadingUsers } = useUsers();
-  const { milestones, isLoadingMilestones } = useMilestones();
+
+  const [leadQuery, setLeadQuery] = useState<string>("");
+  const { users: leads, supportsUserTypeahead, isLoadingUsers: isLoadingLeads } = useUsers(leadQuery);
 
   const { handleSubmit, itemProps } = useForm<CreateProjectValues>({
     async onSubmit(values) {
@@ -40,7 +42,6 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
           state: values.state,
           memberIds: values.memberIds,
           ...(values.leadId ? { leadId: values.leadId } : {}),
-          ...(values.milestoneId ? { milestoneId: values.milestoneId } : {}),
           ...(values.startDate ? { startDate: values.startDate } : {}),
           ...(values.targetDate ? { targetDate: values.targetDate } : {}),
         });
@@ -70,7 +71,6 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
       state: project.state,
       leadId: project.lead?.id,
       memberIds: project.members.nodes.map((p) => p.id) || [],
-      milestoneId: project.milestone?.id,
       startDate: project.startDate ? new Date(project.startDate) : null,
       targetDate: project.targetDate ? new Date(project.targetDate) : null,
     },
@@ -78,7 +78,7 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
 
   return (
     <Form
-      isLoading={isLoadingTeams || isLoadingUsers || isLoadingMilestones}
+      isLoading={isLoadingTeams || isLoadingUsers || isLoadingLeads}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Edit Project" onSubmit={handleSubmit} />
@@ -87,7 +87,7 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
     >
       <Form.TagPicker title="Team(s)" placeholder="Add team" {...itemProps.teamIds}>
         {teams?.map((team) => (
-          <Form.TagPicker.Item key={team.id} value={team.id} title={team.name} icon={getTeamIcon(team)} />
+          <Form.TagPicker.Item key={team.id} value={team.id} title={team.name} icon={getTeamIcon(team, org)} />
         ))}
       </Form.TagPicker>
 
@@ -114,15 +114,17 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
         ))}
       </Form.Dropdown>
 
-      {users && users.length > 0 ? (
-        <Form.Dropdown title="Lead" {...itemProps.leadId}>
-          <Form.Dropdown.Item title="Unassigned" value="" icon={Icon.Person} />
+      <Form.Dropdown
+        title="Lead"
+        {...itemProps.leadId}
+        {...(supportsUserTypeahead && { onSearchTextChange: setLeadQuery, isLoading: isLoadingLeads, throttle: true })}
+      >
+        <Form.Dropdown.Item title="Unassigned" value="" icon={Icon.Person} />
 
-          {users?.map((user) => {
-            return <Form.Dropdown.Item title={user.name} value={user.id} key={user.id} icon={getUserIcon(user)} />;
-          })}
-        </Form.Dropdown>
-      ) : null}
+        {leads?.map((user) => {
+          return <Form.Dropdown.Item title={user.name} value={user.id} key={user.id} icon={getUserIcon(user)} />;
+        })}
+      </Form.Dropdown>
 
       {users && users.length > 0 ? (
         <Form.TagPicker title="Members" placeholder="Add members" {...itemProps.memberIds}>
@@ -130,18 +132,6 @@ export default function EditProjectForm({ project, mutateProjects }: EditProject
             <Form.TagPicker.Item key={user.id} value={user.id} title={user.name} icon={getUserIcon(user)} />
           ))}
         </Form.TagPicker>
-      ) : null}
-
-      {milestones && milestones.length > 0 ? (
-        <Form.Dropdown title="Milestone" {...itemProps.milestoneId}>
-          <Form.Dropdown.Item title="Upcoming" value="" icon={Icon.Map} />
-
-          {milestones?.map((milestone) => {
-            return (
-              <Form.Dropdown.Item title={milestone.name} value={milestone.id} key={milestone.id} icon={Icon.Map} />
-            );
-          })}
-        </Form.Dropdown>
       ) : null}
 
       <Form.DatePicker title="Start Date" type={Form.DatePicker.Type.Date} {...itemProps.startDate} />
